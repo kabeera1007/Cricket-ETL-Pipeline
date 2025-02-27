@@ -29,12 +29,12 @@ This project automates the extraction, transformation, and visualization of live
 
 ## **3. Step-by-Step Guide**
 ### **Step 1: Extract Data using AWS Lambda**
-#### 📌 **What You Need**
+####  **What You Need**
 - API Access to CricLive & ESPNcricinfo.
 - AWS Lambda function in Python (`extract.py`).
 - AWS IAM Role with **S3 write permissions**.
 
-#### ✅ **How to Do It**
+#### **How to Do It**
 1. **Create an AWS Lambda function** in Python.
 2. **Write `extract.py` script**:
    - Sources: Data is collected via an API (Cricket Live Line API) and web scraping (ESPN Cricinfo).
@@ -45,18 +45,18 @@ This project automates the extraction, transformation, and visualization of live
 ---
 
 ### **Step 2: Transform Data using AWS Glue (or Databricks)**
-#### 📌 **What You Need**
+####  **What You Need**
 - AWS Glue job in Python (`transform.py`).
 - AWS IAM Role with **S3 & Glue permissions**.
 
-#### ✅ **How to Do It (AWS Glue)**
+####  **How to Do It (AWS Glue)**
 1. **Create a Glue Job**:
    - Read raw JSON data from S3.
    - Clean, structure, and format the data.
    - Convert it into **Parquet or CSV**. we will use csv
    - Save transformed data back to S3.
 
-#### 🔹 **Optional: Using Databricks for Transformation**
+####  **Optional: Using Databricks for Transformation**
 If using **Databricks instead of Glue**, follow these steps:
 1. **Upload Databricks Notebook** to your Databricks workspace.
 2. **Use PySpark** to:
@@ -68,11 +68,11 @@ If using **Databricks instead of Glue**, follow these steps:
 ---
 
 ### **Step 3: Load Data into Snowflake**
-#### 📌 **What You Need**
+####  **What You Need**
 - Snowflake database & schema (`load.txt`).
 - AWS IAM Role with **S3 read access**.
 
-#### ✅ **How to Do It**
+####  **How to Do It**
 1. **Use SQL script (`load.txt`)** to:
    - Create the database & schema in Snowflake.
    - Define tables for cricket data.
@@ -84,11 +84,11 @@ If using **Databricks instead of Glue**, follow these steps:
 ---
 
 ### **Step 4: Orchestrate Workflow using AWS Step Functions**
-#### 📌 **What You Need**
+####  **What You Need**
 - AWS Step Functions
 - EventBridge trigger
 
-#### ✅ **How to Do It**
+####  **How to Do It**
 1. **Create a Step Function**:
    - Triggers AWS Glue (or Databricks job).
    - Calls Snowpipe to load data.
@@ -98,11 +98,11 @@ If using **Databricks instead of Glue**, follow these steps:
 ---
 
 ### **Step 5: Visualize in Power BI**
-#### 📌 **What You Need**
+####  **What You Need**
 - Power BI
 - Snowflake Connector
 
-#### ✅ **How to Do It**
+####  **How to Do It**
 1. **Connect Power BI to Snowflake** using **ODBC/JDBC**.
 2. **Build Dashboards**:
    - Create match analytics, player stats, and performance trends.
