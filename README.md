@@ -1,6 +1,6 @@
 # **Live streaming Cricket Data Pipeline: AWS, Snowflake, Databricks & Power BI**
 
-https://github.com/kabeera1007/Cricket-ETL-Pipeline/blob/main/flowchar_etl_cric.png?raw=true
+![alt text](https://github.com/kabeera1007/Cricket-ETL-Pipeline/blob/main/flowchar_etl_cric.png?raw=true)
 
 ## **1. Introduction**
 This project automates the extraction, transformation, and visualization of live cricket data from **CricLive** and **ESPNcricinfo** APIs. It utilizes **AWS Lambda** to fetch data, **AWS Glue** (or optionally **Databricks**) to process it, and **Snowflake** for storage via **Snowpipe**. The workflow is managed using **AWS Step Functions & EventBridge**, and the final insights are visualized in **Power BI**. This ensures **real-time, scalable, and automated data analytics**.
