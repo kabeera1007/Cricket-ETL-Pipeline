@@ -1,0 +1,257 @@
+CREATE DATABASE CRICKET_DB
+
+
+create or replace storage integration S3_INIT
+    TYPE = EXTERNAL_STAGE
+    STORAGE_PROVIDER = S3
+    ENABLED = TRUE
+    STORAGE_AWS_ROLE_ARN = 'arn:aws:iam::913524942318:role/service-role/Extraction_AWS_Lambda_Code-role-wehzvd2l'
+    STORAGE_ALLOWED_LOCATIONS = ('s3://crickdatabucket')
+    COMMENT = 'Creating connection to s3';
+
+
+DESC integration s3_init;
+
+
+CREATE OR REPLACE file format CSV_FILEFORMAT
+    type = csv
+    field_delimiter = ','
+    skip_header = 1
+    null_if = ('NULL','null')
+    empty_field_as_null = TRUE
+    error_on_column_count_mismatch = False;
+
+
+CREATE OR REPLACE FILE FORMAT COMMENTRY_FILEFORMAT
+    TYPE = CSV
+    FIELD_OPTIONALLY_ENCLOSED_BY = '"'
+    SKIP_HEADER = 1
+    NULL_IF = ('NULL','null')
+    EMPTY_FIELD_AS_NULL = TRUE
+    ESCAPE = '\\'
+    TRIM_SPACE = TRUE;  -- Optional: trims leading and trailing spaces
+
+
+create or replace stage CRICKET_STAGE
+    URL = 's3://crickdatabucket/transformed_data/'
+    STORAGE_INTEGRATION = S3_INIT
+    FILE_FORMAT=CSV_FILEFORMAT
+
+
+create or replace stage CRICKET_SUMMARY_COMMENTRY_STAGE
+    URL = 's3://crickdatabucket/transformed_data/'
+    STORAGE_INTEGRATION = S3_INIT
+    FILE_FORMAT=COMMENTRY_FILEFORMAT
+
+
+LIST @CRICKET_SUMMARY_COMMENTRY_STAGE/commentry_data;
+
+
+CREATE OR REPLACE TABLE COMMENTRY(
+TIMESTAMP String,
+TEAM_A_OVER Decimal(10,1),
+TEAM_B_OVER Decimal(10,1),
+COMMENTRY String
+);
+
+CREATE OR REPLACE TABLE SUMMARY(
+TIMESTAMP String,
+Series String,
+Series_Id integer,
+Series_type String,
+Venue String,
+Venue_Id integer,
+Match string,
+Match_Id integer,
+Match_Timestamp TIMESTAMP_TZ,
+Match_Date date,
+Match_Time String,
+Match_Type String,
+Toss String,
+Balling_Team_Id integer,
+Batting_Team_Id integer
+);
+
+CREATE OR REPLACE TABLE Team_A(
+TIMESTAMP String,
+Id integer,
+Image string,
+Name String,
+Shortform String,
+Scoreboard String,
+Over DECIMAL(10, 1),
+Score string,
+Wicket integer
+);
+
+CREATE OR REPLACE TABLE Team_B(
+TIMESTAMP String,
+Id integer,
+Image string,
+Name String,
+Shortform String,
+Scoreboard String,
+Over DECIMAL(10, 1),
+Score string,
+Wicket integer
+);
+
+
+CREATE OR REPLACE TABLE Status(
+TIMESTAMP String,
+Status String,
+Team_A_Id integer,
+Team_A_Name String,
+Team_A_Over Decimal(10,1),
+Team_B_Id integer,
+Team_B_Name String,
+Team_B_Over Decimal(10,1),
+Trail_Lead String,
+Match_Session string,
+Match_Status string,
+Match_Result String
+);
+
+CREATE OR REPLACE TABLE Batsmen(
+TIMESTAMP String,
+Team_A_Over decimal(10,1),
+Team_B_Over decimal(10,1),
+Name String,
+Runs integer,
+Balls integer,
+Four integer,
+Six integer,
+Strike_Rate Decimal(10,2)
+);
+
+
+CREATE OR REPLACE TABLE Bowler(
+TIMESTAMP String,
+Team_A_Over decimal(10,1),
+Team_B_Over decimal(10,1),
+Name String,
+Bowler_Overs decimal(10,1),
+Maiden integer,
+Bowler_Runs integer,
+Wickets integer,
+Economy Decimal(10,2)
+);
+
+
+
+COPY INTO SUMMARY
+FROM @CRICKET_STAGE
+FILE_FORMAT = (FORMAT_NAME = CSV_FILEFORMAT)
+ON_ERROR = 'CONTINUE';
+
+COPY INTO Team_A
+FROM @CRICKET_STAGE
+FILE_FORMAT = (FORMAT_NAME = CSV_FILEFORMAT)
+ON_ERROR = 'CONTINUE';
+
+COPY INTO Team_B
+FROM @CRICKET_STAGE
+FILE_FORMAT = (FORMAT_NAME = CSV_FILEFORMAT)
+ON_ERROR = 'CONTINUE';
+
+
+COPY INTO BATSMEN
+FROM @CRICKET_STAGE
+FILE_FORMAT = (FORMAT_NAME = CSV_FILEFORMAT)
+ON_ERROR = 'CONTINUE';  -- This skips any problematic records
+
+COPY INTO COMMENTRY
+FROM @CRICKET_SUMMARY_COMMENTRY_STAGE
+FILE_FORMAT = (FORMAT_NAME = COMMENTRY_FILEFORMAT)
+ON_ERROR = 'CONTINUE';  -- Skips any problematic records
+
+COPY INTO Status
+FROM @CRICKET_STAGE
+FILE_FORMAT = (FORMAT_NAME = CSV_FILEFORMAT)
+ON_ERROR = 'CONTINUE';
+
+COPY INTO Bowler
+FROM @CRICKET_STAGE
+FILE_FORMAT = (FORMAT_NAME = CSV_FILEFORMAT)
+ON_ERROR = 'CONTINUE';
+
+
+Select * from BATSMEN
+Select * from BOWLER
+Select * from COMMENTRY
+Select * from STATUS
+Select * from SUMMARY
+Select * from TEAM_A
+Select * from TEAM_B
+
+
+
+
+
+
+
+
+
+
+
+Create or replace schema PIPE;
+
+create or replace PIPE CRICKET_DB.PIPE.COMMENTRY_PIPE
+auto_ingest = TRUE
+AS
+COPY INTO CRICKET_DB.PUBLIC.COMMENTRY
+from @CRICKET_DB.PUBLIC.CRICKET_SUMMARY_COMMENTRY_STAGE/commentry_data/;
+
+
+
+create or replace PIPE CRICKET_DB.PIPE.SUMMARY_PIPE
+auto_ingest = TRUE
+AS
+COPY INTO CRICKET_DB.PUBLIC.SUMMARY
+from @CRICKET_DB.PUBLIC.CRICKET_SUMMARY_COMMENTRY_STAGE/summary_data/;
+
+
+
+create or replace PIPE CRICKET_DB.PIPE.STATUS_PIPE
+auto_ingest = TRUE
+AS
+COPY INTO CRICKET_DB.PUBLIC.STATUS
+from @CRICKET_DB.PUBLIC.CRICKET_STAGE/status_data/;
+
+
+
+create or replace PIPE CRICKET_DB.PIPE.TEAM_A_PIPE
+auto_ingest = TRUE
+AS
+COPY INTO CRICKET_DB.PUBLIC.TEAM_A
+from @CRICKET_DB.PUBLIC.CRICKET_STAGE/team_a_data/;
+
+
+
+create or replace PIPE CRICKET_DB.PIPE.TEAM_B_PIPE
+auto_ingest = TRUE
+AS
+COPY INTO CRICKET_DB.PUBLIC.TEAM_B
+from @CRICKET_DB.PUBLIC.CRICKET_STAGE/team_b_data/;
+
+
+
+create or replace PIPE CRICKET_DB.PIPE.BATSMEN_PIPE
+auto_ingest = TRUE
+AS
+COPY INTO CRICKET_DB.PUBLIC.BATSMEN
+from @CRICKET_DB.PUBLIC.CRICKET_STAGE/batsmen_data/;
+
+
+
+
+create or replace PIPE CRICKET_DB.PIPE.BOWLER_PIPE
+auto_ingest = TRUE
+AS
+COPY INTO CRICKET_DB.PUBLIC.BOWLER
+from @CRICKET_DB.PUBLIC.CRICKET_STAGE/bowler_data/;
+
+
+
+
+
